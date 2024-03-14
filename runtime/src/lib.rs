@@ -9,15 +9,15 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 use frame_support::derive_impl;
 use frame_system::EnsureRoot;
 use pallet_grandpa::AuthorityId as GrandpaId;
+use pallet_identity::legacy::IdentityInfo;
 use sp_api::impl_runtime_apis;
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata};
-use sp_runtime::traits::OpaqueKeys;
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys,
-    traits::{BlakeTwo256, Block as BlockT, NumberFor, One},
+    traits::{BlakeTwo256, Block as BlockT, NumberFor, One, OpaqueKeys},
     transaction_validity::{TransactionSource, TransactionValidity},
-    ApplyExtrinsicResult,
+    ApplyExtrinsicResult,MultiSignature
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -54,7 +54,7 @@ mod constants;
 
 pub use constants::{currency::*, time::*};
 pub use primitives::{
-    AccountId, AccountIndex, Amount, AssetId, Balance, BlockNumber, ClassId, Hash, Moment, Nonce,
+    AccountId, AccountPublic, AccountIndex, Amount, AssetId, Balance, BlockNumber, ClassId, Hash, Moment, Nonce,
     Signature,
 };
 
@@ -376,6 +376,35 @@ impl sugarfunge_market::Config for Runtime {
     type MaxMetadata = MaxMetadata;
 }
 
+parameter_types! {
+    pub const BasicDeposit: Balance = 10 * DOLLARS;
+    pub const ByteDeposit: Balance = 1 * DOLLARS;
+    pub const SubAccountDeposit: Balance = 2 * DOLLARS;
+    pub const MaxSubAccounts: u32 = 100;
+    pub const MaxAdditionalFields: u32 = 100;
+    pub const MaxRegistrars: u32 = 20;
+}
+
+impl pallet_identity::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type BasicDeposit = BasicDeposit;
+    type ByteDeposit = ByteDeposit;
+    type SubAccountDeposit = SubAccountDeposit;
+    type MaxSubAccounts = MaxSubAccounts;
+    type IdentityInformation = IdentityInfo<MaxAdditionalFields>;
+    type MaxRegistrars = MaxRegistrars;
+    type Slashed = ();
+    type ForceOrigin = EnsureRoot<Self::AccountId>;
+    type RegistrarOrigin = EnsureRoot<Self::AccountId>;
+    type WeightInfo = pallet_identity::weights::SubstrateWeight<Runtime>;
+    type OffchainSignature = MultiSignature;
+	type SigningPublicKey = AccountPublic;
+	type UsernameAuthorityOrigin = EnsureRoot<Self::AccountId>;
+	type PendingUsernameExpiration = ConstU32<100>;
+	type MaxSuffixLength = ConstU32<7>;
+	type MaxUsernameLength = ConstU32<32>;
+}
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub struct Runtime {
@@ -384,6 +413,7 @@ construct_runtime!(
         Aura: pallet_aura,
         Grandpa: pallet_grandpa,
         Balances: pallet_balances,
+        Identity: pallet_identity,
         TransactionPayment: pallet_transaction_payment,
         Sudo: pallet_sudo,
         Scheduler: pallet_scheduler,
