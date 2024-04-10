@@ -7,7 +7,7 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 use sugarfunge_runtime::{
     opaque::SessionKeys, AccountId, AuraConfig, Balance, BalancesConfig, CouncilConfig,
     GrandpaConfig, RuntimeGenesisConfig, SessionConfig, Signature, SudoConfig, SystemConfig,
-    ValidatorSetConfig, DOLLARS, WASM_BINARY,
+    ValidatorSetConfig, DOLLARS, WASM_BINARY, AssetsConfig
 };
 
 // The URL for the telemetry server.
@@ -214,5 +214,6 @@ fn testnet_genesis(
             key: Some(root_key),
         },
         transaction_payment: Default::default(),
+        assets: AssetsConfig{ assets: vec![], metadata: vec![], accounts: vec![] },
     }
 }
